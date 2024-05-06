@@ -40,7 +40,7 @@ def train(model, args, train_loader, scaler):
     
     print(f">>>>>>>>>>>>>>>>>>>>>>模型已保存,用时:{(time.time() - start_time) / 60:.4f} min<<<<<<<<<<<<<<<<<<")
 
-    #plot_loss_data(results_loss)
+    plot_loss_data(results_loss)
 
 def plot_loss_data(data):
     # Draw the curve by plotly
