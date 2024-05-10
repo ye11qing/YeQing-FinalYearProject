@@ -13,7 +13,7 @@ import os
 def objective(trial):
     # 提议超参数
     h_epochs = trial.suggest_int('epochs', 4, 128)
-    h_hidden_size = trial.suggest_int('hidden_size', 4, 32)
+    h_hidden_size = trial.suggest_int('hidden_size', 4, 96)
     h_window_size = trial.suggest_int('window_size', 64, 128)
     h_batch_size = trial.suggest_int('batch_size', 48, 72)
     h_pre_len = trial.suggest_int('pre_len', 1, 16)

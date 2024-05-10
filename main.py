@@ -3,8 +3,8 @@ import torch
 import random
 
 from utils.data_process import create_dataloader
-from models.tcn import TemporalConvNet
-from models.gru import GRU
+from models.exp1_tgcn import TGCN
+from models.exp1_gru import GRU
 from utils.train import train
 from utils.test_and_inspect_fit import test, inspect_model_fit
 from utils.predict import predict
@@ -34,8 +34,6 @@ if __name__ == '__main__':
  
     # model
     parser.add_argument('-hidden_size', type=int, default=128, help="隐藏层单元数")
-    parser.add_argument('-kernel_sizes', type=int, default=3)
-    parser.add_argument('-laryer_num', type=int, default=1)
     # device
     parser.add_argument('-use_gpu', type=bool, default=False)
     parser.add_argument('-device', type=int, default=0, help="只设置最多支持单个gpu训练")
@@ -64,8 +62,8 @@ if __name__ == '__main__':
     # 实例化模型
     try:
         print(f">>>>>>>>>>>>>>>>>>>>>>>>>开始初始化{args.model}模型<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-        if args.model == 'TCN':
-            model = TemporalConvNet(args.input_size,args.output_size, args.pre_len,args.model_dim, args.kernel_sizes).to(device)
+        if args.model == 'TGCN':
+            model = TGCN(args.input_size,args.output_size, args.pre_len,args.model_dim, args.kernel_sizes).to(device)
         elif args.model == 'GRU':
             model = GRU(args, device).to(device)
         print(f">>>>>>>>>>>>>>>>>>>>>>>>>开始初始化{args.model}模型成功<<<<<<<<<<<<<<<<<<<<<<<<<<<")
