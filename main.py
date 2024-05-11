@@ -21,10 +21,6 @@ if __name__ == '__main__':
     parser.add_argument('-target', type=str, default='92693', help='你需要预测的特征列,这个值会最后保存在csv文件里')
     parser.add_argument('-input_size', type=int, default=40, help='你的特征个数不算时间那一列')
     parser.add_argument('-feature', type=str, default='MS', help='[M, S, MS],多元预测多元,单元预测单元,多元预测单元')
-    parser.add_argument('-model_dim', type=list, default=[64, 128, 256], help='这个地方是这个TCN卷积的关键部分,它代表了TCN的层数我这里输'
-                                                                              '入list中包含三个元素那么我的TCN就是三层,这个根据你的数据复杂度来设置'
-                                                                              '层数越多对应数据越复杂但是不要超过5层')
-
     # learning
     parser.add_argument('-lr', type=float, default=0.001, help="学习率")
     parser.add_argument('-drop_out', type=float, default=0.2, help="随机丢弃概率,防止过拟合")
