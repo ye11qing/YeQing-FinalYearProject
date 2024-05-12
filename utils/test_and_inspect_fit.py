@@ -3,7 +3,11 @@ from sklearn.metrics import r2_score
 import numpy as np
 import plotly.graph_objects as go
 
+# Author: Ye Qing
+# Affiliation: National University of Singapore, Suzhou Research Institute
+
 def test(model, args, test_loader, scaler):
+    """Evaluate the model on the test set and plot results."""
     mae_list = []
     rmse_list = []
     model = model
