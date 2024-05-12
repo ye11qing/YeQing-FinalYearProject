@@ -1,6 +1,10 @@
 import torch
 from torch.utils.data import DataLoader, Dataset
 import pandas as pd
+from tensorly.decomposition import CP
+import tensorly as tl
+from tensorly.cp_tensor import cp_to_tensor
+import numpy as np
 
 
 class StandardScaler():
@@ -49,7 +53,7 @@ def create_inout_sequences(input_data, input_data_filled, tw, pre_len, config):
         seq = input_data[i:i + tw]
         seq_filled = input_data_filled[i:i + tw]
         if config.fill == True:
-            seq_filled = fill(seq_filled)
+            seq_filled = fill_missing_values_with_svd(seq_filled)
         if (i + tw + pre_len) > len(input_data):
             break
         if config.feature == 'MS':
@@ -128,81 +132,48 @@ def create_dataloader(config, device):
     return train_loader, test_loader, valid_loader, scaler
 
 
-def fill(tensor):
-    # 交换维度
-    tensor_swapped = tensor.t()
 
+def fill_missing_values_with_mean(tensor):
     # 找出所有为100的元素的索引
-    idx_100 = (tensor_swapped == 100)
+    idx_100 = (tensor == 100)
 
-    # 计算每列除了100以外的元素的平均值
-    mean_except_100 = (tensor_swapped * (~idx_100)).sum(dim=1) / (~idx_100).sum(dim=1)
+    # 计算每个节点（沿seq维度）的平均值，除去值为100的
+    mean_except_100 = (tensor * (~idx_100)).sum(dim=1) / (~idx_100).sum(dim=1)
 
-    # 将100替换为平均值
-    tensor_swapped[idx_100] = mean_except_100.unsqueeze(1).repeat(1, tensor_swapped.size(1))[idx_100]
+    # 将100替换为各节点的平均值
+    # 为此我们需要扩展mean_except_100使其维度与tensor匹配
+    mean_except_100 = mean_except_100.unsqueeze(1).expand_as(tensor)
+    tensor[idx_100] = mean_except_100[idx_100]
 
-    # 交换维度
-    tensor_swapped = tensor_swapped.t()
+    return tensor
 
-    return tensor_swapped
 
-import torch
-import torch.nn.functional as F
+def rank_k_approx(x, k):
+    # Compute SVD using PyTorch
+    u, s, vh = torch.svd(x)
+    # Keep only the first k singular values
+    s = torch.diag(s[:k])
+    return u[:, :k] @ s @ vh[:k, :]
 
-def fill_missing_tensor(X, missing_value=100.0, rank=10, n_iter=10):
-    """
-    Fill missing values in a 2D tensor using tensor factorization.
+def fill_missing_values_with_svd(x, k=1, num_iters=10):
+    # Identify missing values (marked as 100)
+    missing_mask = x == 100
+    # Replace missing values with NaN for calculation
+    x = x.masked_fill(missing_mask, float('nan'))
+
+    # Fill missing values with the mean of each column
+    means = torch.nanmean(x, dim=0, keepdim=True)
+    x_filled = x.clone()
     
-    Args:
-        X (torch.Tensor): 2D tensor with missing values represented as missing_value
-        missing_value (float, optional): Value used to represent missing values. Defaults to 100.0.
-        rank (int, optional): Rank for tensor factorization. Defaults to 10.
-        n_iter (int, optional): Number of iterations for ALS. Defaults to 10.
-        
-    Returns:
-        torch.Tensor: Tensor with missing values filled.
-    """
-    
-    # Get indices of missing values
-    is_missing = (X == missing_value)
-    
-    # Initialize factor matrices randomly
-    m, n = X.shape
-    U = torch.randn(m, rank)
-    V = torch.randn(rank, n)
-    
-    # ALS algorithm
-    for _ in range(n_iter):
-        # Update U
-        V_t = V.T
-        for i in range(m):
-            row = X[i]
-            missing_idx = is_missing[i]
-            row_missing = row[~missing_idx]
-            V_missing_idx = ~missing_idx
-            if V_missing_idx.numel() == 0:  # Handle empty index case
-                U[i, :] = torch.zeros(rank)
-            else:
-                V_missing = V_t[:, V_missing_idx]
-                U[i, V_missing_idx] = torch.linalg.lstsq(row_missing, V_missing).solution.squeeze()
-        
-        # Update V
-        for j in range(n):
-            col = X[:, j]
-            missing_idx = is_missing[:, j]
-            col_missing = col[~missing_idx]
-            U_missing_idx = ~missing_idx
-            if U_missing_idx.numel() == 0:  # Handle empty index case
-                V[:, j] = torch.zeros(rank)
-            else:
-                U_missing = U[U_missing_idx]
-                V[:, j][U_missing_idx] = torch.linalg.lstsq(col_missing, U_missing).solution.squeeze()
-    
-    # Reconstruct tensor
-    X_reconstructed = torch.matmul(U, V)
-    
-    # Fill missing values
-    X_filled = X.clone()
-    X_filled[is_missing] = X_reconstructed[is_missing]
-    
-    return X_filled
+    # Ensure means are broadcast correctly over the missing values
+    for col in range(x.shape[1]):
+        col_missing_mask = missing_mask[:, col]
+        x_filled[col_missing_mask, col] = means[:, col]
+
+    for i in range(num_iters):
+        # Compute the rank-k approximation
+        x_approx = rank_k_approx(x_filled, k)
+        # Only update the missing values
+        x_filled = torch.where(missing_mask, x_approx, x_filled)
+
+    return x_filled
