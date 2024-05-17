@@ -1,14 +1,18 @@
-
 # Time Series Forecasting for Traffic Prediction
 
 ## Introduction
 This project focuses on the application of machine learning techniques for time series forecasting in the context of traffic prediction, particularly addressing challenges posed by missing data and optimizing the model structure.
 
 ## Proposed Approach
-The approach combines mean imputation for handling missing values with advanced RNN models such as Gated Recurrent Units (GRU) and T-GCN models. This involves:
+The approach combines Singular Value Decomposition (SVD) imputation for handling missing values with advanced RNN models such as Gated Recurrent Units (GRU) and T-GCN models. This involves:
 
-- **Mean Imputation**: Missing values are replaced with the average of each feature within the existing data.
+- **SVD Imputation**: In input tensor, missing values are replaced using Singular Value Decomposition to better capture underlying data structures.
+- **SVD Imputation**: In output tensor, missing values are removed from the loss function calculation.
+![SVD](images/svd.png)
 - **T-GRU Model**: Enhances prediction accuracy by incorporating spatial dependencies between traffic network nodes through graph convolutions.
+![TGCN](images/TGCN.png)
+- Parallel Computing: Utilizes the PyTorch DataLoader for parallel computing, which significantly boosts the performance of RNNs in long-term forecasting.
+![Segment-GRU](images/SegmentGRU.png)
 - **Hyperparameter Optimization**: Utilizes the Optuna library to fine-tune model parameters.
 
 ## Experiments
@@ -24,18 +28,16 @@ Developed using Flask and Flask-RESTX, the application provides a user-friendly 
 - Result visualization
 
 ## Conclusion
-The thesis presents a comprehensive framework for effective traffic prediction, contributing to improved traffic management and urban planning.
+1. TGCN can enhance prediction performance compared to GRU.
+2. SVD imputation of missing values improves predictive accuracy, and excluding missing values from the loss function makes predictions more aligned with reality.
+3. Utilizing parallel computing significantly boosts the performance of RNNs in long-term forecasting.
+4. Both TGCN and GRU models demonstrate a certain level of generalization ability, likely due to commonalities in traffic data.
 
 ## How to Run the Code
 
 ### Requirements
 - Python 3.8+
-- Libraries: numpy, pandas, torch, flask, flask-restx, optuna
-
-### Setup
-```bash
-pip install numpy pandas torch flask flask-restx optuna
-```
+- Libraries: numpy, pandas, torch, flask, flask-restx, optuna, notebook, scikit-learn, plotly, tqdm
 
 ### Running the Application
 ```bash
